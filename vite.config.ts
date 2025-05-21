@@ -1,8 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import path from "path"
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/cognimosyne/',  // ✅ 반드시 넣어야 GitHub Pages에서 작동
-  plugins: [react()],
+  base: '/cognimosyne/',
+  plugins: [react(), tailwindcss(),],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
 })
