@@ -1,15 +1,10 @@
-import Hero from './components/Hero'
-import Process from './components/Process'
-import Footer from './components/Footer'
-
 function App() {
   return (
     <div>
-      <Hero />
-      <Process />
-      <Footer />
+      <h1>Hello, Vite + React!</h1>
+      <p>처음 만든 React 앱이에요 🎉</p>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
