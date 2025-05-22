@@ -1,10 +1,16 @@
-<!-- /public/404.html -->
+<!-- public/404.html -->
 <!DOCTYPE html>
 <html>
   <head>
-    <meta http-equiv="refresh" content="0; url=/" />
+    <meta charset="utf-8">
+    <title>Redirecting...</title>
+    <script type="text/javascript">
+      const pathname = window.location.pathname;
+      sessionStorage.redirect = pathname;
+      window.location.replace("/");
+    </script>
   </head>
   <body>
-    <p>Redirecting...</p>
+    Redirecting...
   </body>
 </html>
