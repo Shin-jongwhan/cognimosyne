@@ -35,7 +35,32 @@ export default function LandingPage() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-14 max-w-6xl w-full justify-items-center">
-            {["자막 추출", "AI 교정", "다국어 번역", "SEO 키워드 생성", "웹 기반 편집기", "API 제공"].map((feature, index) => (
+            {[
+              {
+                title: "자막 추출",
+                description: "영상 또는 오디오에서 자동으로 자막을 추출하여 접근성과 편집 편의성을 향상시킵니다.",
+              },
+              {
+                title: "AI 교정",
+                description: "AI 기반 언어 분석을 통해 자막 문장을 자연스럽고 정확하게 교정합니다.",
+              },
+              {
+                title: "다국어 번역",
+                description: "전 세계 다양한 언어로 자막을 자동 번역하여 글로벌 접근성을 확보합니다.",
+              },
+              {
+                title: "SEO 키워드 생성",
+                description: "자막 기반으로 메타데이터 및 키워드를 자동 생성하여 검색 노출을 강화합니다.",
+              },
+              {
+                title: "웹 기반 편집기",
+                description: "(업데이트 예정) 브라우저에서 실시간 자막 미리보기와 편집이 가능한 직관적인 UI를 제공합니다.",
+              },
+              {
+                title: "API 제공",
+                description: "(업데이트 예정) 외부 시스템과 손쉽게 통합 가능한 REST API를 통해 유연한 확장이 가능합니다.",
+              },
+            ].map((feature, index) => (
               <motion.div
                 key={index}
                 className="bg-gray-800 rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all text-center w-full max-w-sm"
@@ -44,9 +69,9 @@ export default function LandingPage() {
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ delay: index * 0.1, duration: 0.6 }}
               >
-                <h3 className="text-2xl font-bold text-white mb-4">{feature}</h3>
+                <h3 className="text-2xl font-bold text-white mb-4">{feature.title}</h3>
                 <p className="text-gray-400 text-base leading-relaxed">
-                  {feature} 기능을 통해 콘텐츠 접근성과 검색 최적화를 극대화하세요.
+                  {feature.description}
                 </p>
               </motion.div>
             ))}
@@ -70,7 +95,24 @@ export default function LandingPage() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-14 w-full">
-            {["🎯 목적 중심의 자동화", "🌍 글로벌 콘텐츠 확장", "📈 SEO 최적화 자동화", "🛠 편집기와 API 제공"].map((title, i) => (
+            {[
+              {
+                title: "🎯 목적 중심의 자동화",
+                description: "단순한 기술 구현을 넘어 콘텐츠의 본질에 집중한 자동화 기능을 제공합니다.",
+              },
+              {
+                title: "🌍 글로벌 콘텐츠 확장",
+                description: "다국어 자막과 번역으로 전 세계 누구나 이해할 수 있는 콘텐츠로 확장하세요.",
+              },
+              {
+                title: "📈 SEO 최적화 자동화",
+                description: "검색엔진이 좋아하는 메타데이터와 키워드를 자동으로 추출해 노출을 극대화합니다.",
+              },
+              {
+                title: "🛠 편집기와 API 제공",
+                description: "(업데이트 예정) 브라우저 기반 편집기와 외부 연동 가능한 API로 유연한 작업 환경을 지원합니다.",
+              },
+            ].map((item, i) => (
               <motion.div
                 key={i}
                 className="bg-gray-800 p-10 rounded-xl shadow-lg text-left"
@@ -79,9 +121,9 @@ export default function LandingPage() {
                 viewport={{ once: true, amount: 0.3 }}
                 transition={{ delay: i * 0.1, duration: 0.6 }}
               >
-                <h3 className="text-2xl font-semibold mb-5">{title}</h3>
+                <h3 className="text-2xl font-semibold mb-5">{item.title}</h3>
                 <p className="text-gray-300 text-lg leading-relaxed">
-                  {/* 내용은 생략 가능하거나 props로 분리 가능 */}
+                  {item.description}
                 </p>
               </motion.div>
             ))}

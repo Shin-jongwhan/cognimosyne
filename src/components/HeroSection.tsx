@@ -50,7 +50,7 @@ export default function HeroSection() {
         >
           Voices Across Borders
         </motion.h1>
-        <p className="mb-6 text-base md:text-lg text-gray-200">
+        <p className="mb-6 text-base md:text-lg text-gray-800">
           Bridging voices across languages and media
         </p>
         <GlowingButton />
