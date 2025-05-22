@@ -23,7 +23,7 @@ export default function HeroSection() {
       <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.2, duration: 0.5 }}
+        transition={{ delay: 0.3, duration: 1.5 }}
         className="absolute z-20 left-1/2 bottom-[150px] md:bottom-[250px] -translate-x-1/2 
                   w-[80vw] max-w-[800px] aspect-[3/2] p-[2px] 
                   border border-white/30 rounded-md 
