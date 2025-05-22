@@ -113,7 +113,7 @@ export default function LandingPage() {
               <p className="font-semibold text-white">정책</p>
               <ul className="space-y-1">
                 <li><a href="/policy" className="hover:underline">이용약관</a></li>
-                <li><a href="#" className="hover:underline">개인정보처리방침</a></li>
+                <li><a href="/privacypolicy" className="hover:underline">개인정보처리방침</a></li>
               </ul>
             </div>
             <div className="space-x-4 flex items-center mt-4 md:mt-0">

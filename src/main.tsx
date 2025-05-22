@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import PolicyPage from "./pages/PolicyPage";
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import "./index.css";
 
 function Redirector() {
@@ -25,6 +26,7 @@ function RouterApp() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/policy" element={<PolicyPage />} />
+        <Route path="/privacypolicy" element={<PrivacyPolicy />} />
       </Routes>
     </>
   );

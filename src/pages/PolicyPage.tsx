@@ -15,7 +15,7 @@ export default function PolicyPage() {
         </p>
 
         <h3 className="text-xl font-semibold mb-2">제 2 조 (용어의 정의)</h3>
-        <p className="mb-4 leading-relaxed text-lg text-gray-300">본 약관에서 사용하는 용어는 다음과 같이 정의한다.</p>
+        <p className="mb-4 leading-relaxed text-lg text-gray-300">본 약관에서 사a용하는 용어는 다음과 같이 정의한다.</p>
         <ul className="list-decimal pl-6 mb-6 text-lg text-gray-300 space-y-2">
           <li>
             “웹사이트”란 회사가 재화 또는 용역을 이용자에게 제공하기 위하여 컴퓨터 등 정보통신설비를 이용하여 재화 또는
