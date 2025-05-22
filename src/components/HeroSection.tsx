@@ -20,15 +20,26 @@ export default function HeroSection() {
       </div>
 
       {/* 캐릭터 이미지 */}
-      <motion.img
-        src={characterImg}
-        alt="character"
+      <motion.div
         initial={{ opacity: 0, y: 50 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.2, duration: 1 }}
-        className="absolute z-20 left-1/2 -translate-x-1/2 bottom-[50px] max-h-[85%] pointer-events-none"
-      />
-
+        transition={{ delay: 1.2, duration: 0.5 }}
+        className="absolute z-20 left-1/2 bottom-[150px] md:bottom-[250px] -translate-x-1/2 
+                  w-[80vw] max-w-[800px] aspect-[3/2] p-[2px] 
+                  border border-white/30 rounded-md 
+                  shadow-[0_0_40px_rgba(255,255,255,0.08)] pointer-events-none"
+        style={{
+          transform: 'perspective(1000px) rotateY(8deg)',
+          transformStyle: 'preserve-3d',
+        }}
+      >
+        <img
+          src={characterImg}
+          alt="character"
+          className="w-full h-full object-cover rounded"
+        />
+      </motion.div>
+      
       {/* 텍스트 및 버튼 */}
       <div className="absolute z-20 bottom-20 w-full text-center">
         <motion.h1
@@ -37,16 +48,16 @@ export default function HeroSection() {
           transition={{ duration: 1 }}
           className="text-4xl md:text-6xl font-extralight mb-4"
         >
-          Virtual Production
+          Voices Across Borders
         </motion.h1>
         <p className="mb-6 text-base md:text-lg text-gray-200">
-          Connecting analogue and digital realms
+          Bridging voices across languages and media
         </p>
         <GlowingButton />
       </div>
 
       {/* 상단 로고 및 메뉴 */}
-      <div className="absolute z-30 top-10 left-10 font-bold text-xl">UPP</div>
+      <div className="absolute z-30 top-10 left-10 font-bold text-xl">Media Translator</div>
       <div className="absolute z-30 top-10 right-10 text-sm cursor-pointer">☰</div>
     </div>
   );
