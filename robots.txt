@@ -1,0 +1,6 @@
+# 모든 검색엔진에게 전체 접근 허용
+User-agent: *
+Allow: /
+
+# 사이트맵 위치 명시 (SEO 향상에 도움)
+Sitemap: https://www.cognimosyne.com/sitemap.xml
