@@ -19,7 +19,7 @@ export default function LandingPage() {
       {/* 기능 소개 섹션 */}
       <motion.section
         id="features"
-        className="bg-gradient-to-b from-black to-gray-900 text-white py-60 px-6"
+        className="bg-gradient-to-b from-black to-gray-900 text-white py-20 sm:py-40 lg:py-60 px-6"
         initial={{ opacity: 0, y: 50 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}

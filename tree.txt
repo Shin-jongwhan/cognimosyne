@@ -13,7 +13,6 @@ C:.
 ¦¢  README.md
 ¦¢  tailwind.config.ts
 ¦¢  tree.txt
-¦¢  tree_250522.txt
 ¦¢  tsconfig.app.json
 ¦¢  tsconfig.json
 ¦¢  tsconfig.node.json
@@ -23,6 +22,7 @@ C:.
 ¦¢      settings.json
 ¦¢      
 ¦§¦¡dist
+¦¢  ¦¢  404.html
 ¦¢  ¦¢  CNAME
 ¦¢  ¦¢  favicon.ico
 ¦¢  ¦¢  index.html
@@ -31,10 +31,10 @@ C:.
 ¦¢  ¦¢  vite.svg
 ¦¢  ¦¢  
 ¦¢  ¦¦¦¡assets
-¦¢          bg_space-DcKkI727.png
-¦¢          index-BdKXK0eo.css
-¦¢          index-ZNFrx9EI.js
-¦¢          landing_page_character-CnbfTVxT.png
+¦¢          bg_space-BUqKi67c.png
+¦¢          index-BMK7BMyq.css
+¦¢          index-m-Lym3kS.js
+¦¢          landing_page_character-C1qdiwdx.png
 ¦¢          
 ¦§¦¡node_modules
 ¦¢  ¦¢  .modules.yaml
@@ -111,6 +111,7 @@ C:.
 ¦¢  ¦¢      ¦¦¦¡https!github.com!Shin-jongwhan!cognimosyne.git
 ¦¢  ¦¢          ¦¢  .env
 ¦¢  ¦¢          ¦¢  .gitignore
+¦¢  ¦¢          ¦¢  404.html
 ¦¢  ¦¢          ¦¢  CNAME
 ¦¢  ¦¢          ¦¢  favicon.ico
 ¦¢  ¦¢          ¦¢  index.html
@@ -119,10 +120,10 @@ C:.
 ¦¢  ¦¢          ¦¢  vite.svg
 ¦¢  ¦¢          ¦¢  
 ¦¢  ¦¢          ¦¦¦¡assets
-¦¢  ¦¢                  bg_space-DcKkI727.png
-¦¢  ¦¢                  index-BdKXK0eo.css
-¦¢  ¦¢                  index-ZNFrx9EI.js
-¦¢  ¦¢                  landing_page_character-CnbfTVxT.png
+¦¢  ¦¢                  bg_space-BUqKi67c.png
+¦¢  ¦¢                  index-BMK7BMyq.css
+¦¢  ¦¢                  index-m-Lym3kS.js
+¦¢  ¦¢                  landing_page_character-C1qdiwdx.png
 ¦¢  ¦¢                  
 ¦¢  ¦§¦¡.ignored
 ¦¢  ¦¢  ¦§¦¡@eslint
@@ -65342,6 +65343,7 @@ C:.
 ¦¢          readme.md
 ¦¢          
 ¦§¦¡public
+¦¢      404.html
 ¦¢      CNAME
 ¦¢      favicon.ico
 ¦¢      robots.txt
@@ -65360,7 +65362,6 @@ C:.
     ¦¢  
     ¦§¦¡assets
     ¦¢      bg_space.png
-    ¦¢      bg_space_3.png
     ¦¢      landing_page_character.png
     ¦¢      react.svg
     ¦¢      
@@ -65379,5 +65380,6 @@ C:.
     ¦§¦¡pages
     ¦¢      LandingPage.tsx
     ¦¢      PolicyPage.tsx
+    ¦¢      PrivacyPolicy.tsx
     ¦¢      
     ¦¦¦¡services
