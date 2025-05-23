@@ -53,7 +53,9 @@ export default function HeroSection() {
         <p className="mb-6 text-base md:text-lg text-gray-800">
           Bridging voices across languages and media
         </p>
-        <GlowingButton />
+        <a href="#features">
+          <GlowingButton />
+        </a>
       </div>
 
       {/* 상단 로고 및 메뉴 */}

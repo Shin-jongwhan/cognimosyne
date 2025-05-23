@@ -53,13 +53,13 @@ export default function LandingPage() {
                 description: "자막 기반으로 메타데이터 및 키워드를 자동 생성하여 검색 노출을 강화합니다.",
               },
               {
-                title: "웹 기반 편집기",
-                description: "(업데이트 예정) 브라우저에서 실시간 자막 미리보기와 편집이 가능한 직관적인 UI를 제공합니다.",
-              },
+                title: "타임코드 정렬",
+                description: "자막 텍스트에 정확한 타임코드를 자동으로 맞춰주어, 싱크 오류 없이 자연스럽게 재생됩니다.",
+              }, 
               {
-                title: "API 제공",
-                description: "(업데이트 예정) 외부 시스템과 손쉽게 통합 가능한 REST API를 통해 유연한 확장이 가능합니다.",
-              },
+                title: "자막 파일 다운로드",
+                description: "완성된 자막을 SRT 또는 VTT 포맷으로 다운로드하여 다양한 영상 플랫폼에 손쉽게 적용할 수 있습니다.",
+              }, 
             ].map((feature, index) => (
               <motion.div
                 key={index}
@@ -109,8 +109,8 @@ export default function LandingPage() {
                 description: "검색엔진이 좋아하는 메타데이터와 키워드를 자동으로 추출해 노출을 극대화합니다.",
               },
               {
-                title: "🛠 편집기와 API 제공",
-                description: "(업데이트 예정) 브라우저 기반 편집기와 외부 연동 가능한 API로 유연한 작업 환경을 지원합니다.",
+                title: "🌐 다국어 자막 생성",
+                description: "한 번의 업로드로 다양한 언어의 자막을 동시에 생성하여 글로벌 시청자에게 손쉽게 도달할 수 있습니다.",
               },
             ].map((item, i) => (
               <motion.div
@@ -142,6 +142,7 @@ export default function LandingPage() {
           </div>
 
           <div className="flex flex-col md:flex-row gap-10 md:gap-20">
+            {/*
             <div className="space-y-1">
               <p className="font-semibold text-white">서비스</p>
               <ul className="space-y-1">
@@ -151,6 +152,7 @@ export default function LandingPage() {
                 <li><a href="#" className="hover:underline">ABOUT</a></li>
               </ul>
             </div>
+            */}
             <div className="space-y-1">
               <p className="font-semibold text-white">정책</p>
               <ul className="space-y-1">
