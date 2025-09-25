@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 import { COGNITO, COGNITO_ENDPOINT } from "../config/cognito";
 
 type SignupForm = {
@@ -270,3 +270,4 @@ export default function AwsCognitoSignupTestPage() {
     </main>
   );
 }
+

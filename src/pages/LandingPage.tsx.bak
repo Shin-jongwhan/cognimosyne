@@ -62,16 +62,19 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen bg-black text-white font-sans scroll-smooth">
       {/* 상단 우측 로그인/로그아웃 영역 */}
-      <header className="landing-header sticky top-0 z-50">
+      <header className="sticky top-0 z-50 bg-black/70 backdrop-blur border-b border-white/10">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-1 flex items-center justify-end gap-1">
           {auth.isAuthenticated ? (
             <>
-              <span className="landing-header__email hidden sm:inline truncate max-w-[40vw]">
+              <span className="hidden sm:inline text-[11px] text-gray-300 truncate max-w-[40vw]">
                 {auth.user?.profile?.email}
               </span>
               <button
                 onClick={logoutToCurrentOrigin}
-                className="landing-header__button">
+                className="inline-flex items-center justify-center rounded-md
+                          px-1.5 py-0.5 text-[11px] font-medium
+                          border border-white/30 text-white bg-transparent
+                          hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-violet-400/60">
                 로그아웃
               </button>
             </>
@@ -79,12 +82,18 @@ export default function LandingPage() {
             <div className="flex items-center gap-1">
               <button
                 onClick={() => auth.signinRedirect()}
-                className="landing-header__button">
+                className="inline-flex items-center justify-center rounded-md
+                          px-1.5 py-0.5 text-[11px] font-medium
+                          border border-white/35 text-white bg-transparent
+                          hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-violet-400/60">
                 로그인
               </button>
               <button
                 onClick={() => auth.signinRedirect({ extraQueryParams: { screen_hint: 'signup' } })}
-                className="landing-header__button landing-header__button--primary">
+                className="inline-flex items-center justify-center rounded-md
+                          px-2 py-0.5 text-[11px] font-semibold
+                          bg-violet-500 hover:bg-violet-400 text-white shadow-sm
+                          focus:outline-none focus:ring-2 focus:ring-violet-400/60">
                 회원가입
               </button>
             </div>
@@ -206,4 +215,3 @@ export default function LandingPage() {
     </main>
   );
 }
-
