@@ -1,28 +1,99 @@
 // src/main.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import { AuthProvider } from "react-oidc-context";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { AuthProvider, useAuth } from "react-oidc-context";
 import LandingPage from "./pages/LandingPage";
 import PolicyPage from "./pages/PolicyPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import UserDashboardMain from "./pages/UserDashboardMain";
 import AwsCognitoSignupTestPage from "./pages/AwsCognitoSignupTestPage";
 import "./index.css";
+import {
+  DEFAULT_LOGIN_LANGUAGE,
+  LOGIN_LANGUAGE_STORAGE_KEY,
+  loginLanguageMap,
+  resolveInitialLoginLanguage,
+  type LoginLanguageCode,
+} from "./i18n/loginLanguages";
 
 function Redirector() {
   const navigate = useNavigate();
-  React.useEffect(() => {
-    // OIDC 콜백 중이면 건드리지 않음 (state 유실 방지)
-    const params = new URLSearchParams(window.location.search);
-    if (params.has("code") || params.has("state")) return;
+  const auth = useAuth();
 
-    const redirectPath = sessionStorage.getItem("redirect");
-    if (redirectPath) {
-      sessionStorage.removeItem("redirect");
+  React.useEffect(() => {
+    if (!auth.isAuthenticated) return;
+
+    let redirectPath = "/user-dashboard/main";
+    try {
+      const stored = window.sessionStorage.getItem("redirect");
+      if (stored) {
+        redirectPath = stored;
+        window.sessionStorage.removeItem("redirect");
+      }
+    } catch {
+      // ignore storage errors
+    }
+
+    if (window.location.pathname !== redirectPath) {
       navigate(redirectPath, { replace: true });
     }
-  }, [navigate]);
+  }, [auth.isAuthenticated, navigate]);
+
   return null;
+}
+
+const determineLoginLanguage = (): LoginLanguageCode => {
+  try {
+    const stored = window.localStorage.getItem(LOGIN_LANGUAGE_STORAGE_KEY) as LoginLanguageCode | null;
+    if (stored && loginLanguageMap[stored]) {
+      return stored;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return resolveInitialLoginLanguage();
+};
+
+function RequireAuth({ children }: { children: React.ReactElement }) {
+  const auth = useAuth();
+  const location = useLocation();
+  const [redirectInitiated, setRedirectInitiated] = React.useState(false);
+
+  React.useEffect(() => {
+    if (auth.isLoading || auth.isAuthenticated || redirectInitiated) return;
+
+    const target = `${location.pathname}${location.search}${location.hash}`;
+    try {
+      window.sessionStorage.setItem("redirect", target || "/user-dashboard/main");
+    } catch {
+      // ignore storage errors
+    }
+
+    const lang = determineLoginLanguage() ?? DEFAULT_LOGIN_LANGUAGE;
+
+    auth
+      .signinRedirect({
+        extraQueryParams: {
+          lang,
+        },
+      })
+      .catch(() => {
+        setRedirectInitiated(false);
+      });
+
+    setRedirectInitiated(true);
+  }, [auth, location, redirectInitiated]);
+
+  if (!auth.isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+        <p className="text-sm text-slate-300">로그인 페이지로 이동 중입니다...</p>
+      </main>
+    );
+  }
+
+  return children;
 }
 
 function RouterApp() {
@@ -33,6 +104,14 @@ function RouterApp() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/policy" element={<PolicyPage />} />
         <Route path="/privacypolicy" element={<PrivacyPolicy />} />
+        <Route
+          path="/user-dashboard/main"
+          element={(
+            <RequireAuth>
+              <UserDashboardMain />
+            </RequireAuth>
+          )}
+        />
         <Route path="/test/aws-cognito-signup" element={<AwsCognitoSignupTestPage />} />
       </Routes>
     </>

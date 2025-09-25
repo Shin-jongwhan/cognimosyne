@@ -44,9 +44,37 @@ export type LandingPageCopy = {
   footer: LandingPageFooter;
 };
 
+export type UserDashboardItem = {
+  key: string;
+  title: string;
+  description: string;
+  ctaPath?: string;
+  isAvailable?: boolean;
+};
+
+export type UserDashboardNavGroup = {
+  key: string;
+  label: string;
+  items: UserDashboardItem[];
+};
+
+export type UserDashboardCopy = {
+  title: string;
+  subtitle?: string;
+  navGroups: UserDashboardNavGroup[];
+  actions: {
+    open: string;
+    comingSoon: string;
+  };
+};
+
 export type LoginLanguageDefinition = {
   code: string;
   label: string;
   strings: LoginLanguageStrings;
   landingPage: LandingPageCopy;
+  userDashboard?: UserDashboardCopy;
 };
+
+
+

@@ -1,0 +1,1 @@
+{"Rules":[{"ID":"keep-current-and-5-recent-noncurrent","Status":"Enabled","Filter":{"Prefix":""},"NoncurrentVersionExpiration":{"NoncurrentDays":90,"NewerNoncurrentVersions":5},"AbortIncompleteMultipartUpload":{"DaysAfterInitiation":7}}]}

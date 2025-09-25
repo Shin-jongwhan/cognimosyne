@@ -78,6 +78,88 @@ const locale: LoginLanguageDefinition = {
       ],
     },
   },
+  userDashboard: {
+    title: "사용자 대시보드",
+    subtitle: "서비스 사용 현황을 한눈에 확인하세요.",
+    navGroups: [
+      {
+        key: "main",
+        label: "메인",
+        items: [],
+      },
+      {
+        key: "credits",
+        label: "크레딧",
+        items: [
+          {
+            key: "credit-overview",
+            title: "크레딧 조회",
+            description: "보유 중인 크레딧과 최근 사용 내역을 확인합니다.",
+            ctaPath: "/user-dashboard/credits",
+            isAvailable: false,
+          },
+          {
+            key: "credit-topup",
+            title: "크레딧 충전",
+            description: "빠르게 크레딧을 충전하고 사용량을 관리합니다.",
+            ctaPath: "/user-dashboard/credits/topup",
+            isAvailable: false,
+          },
+          {
+            key: "billing-history",
+            title: "결제 내역",
+            description: "구매한 상품과 결제 이력을 다회차로 확인합니다.",
+            ctaPath: "/user-dashboard/billing/history",
+            isAvailable: false,
+          },
+        ],
+      },
+      {
+        key: "files",
+        label: "내 파일",
+        items: [
+          {
+            key: "file-library",
+            title: "내 파일 조회",
+            description: "업로드한 파일과 처리 현황을 한 번에 살펴봅니다. (S3 연동 예정)",
+            ctaPath: "/user-dashboard/files",
+            isAvailable: false,
+          },
+        ],
+      },
+      {
+        key: "services",
+        label: "서비스",
+        items: [
+          {
+            key: "subtitle-request",
+            title: "자막 만들기",
+            description: "AI 기반 자막 생성을 요청하고 결과를 편집합니다.",
+            ctaPath: "/user-dashboard/services/subtitles",
+            isAvailable: false,
+          },
+          {
+            key: "translation-request",
+            title: "번역 요청",
+            description: "원하는 언어로 번역을 요청하고 세부 옵션을 선택합니다.",
+            ctaPath: "/user-dashboard/services/translation",
+            isAvailable: false,
+          },
+          {
+            key: "service-status",
+            title: "서비스 요청 현황",
+            description: "요청한 서비스의 처리 상태를 실시간으로 확인합니다.",
+            ctaPath: "/user-dashboard/services/status",
+            isAvailable: false,
+          },
+        ],
+      },
+    ],
+    actions: {
+      open: "바로가기",
+      comingSoon: "준비 중",
+    },
+  },
 };
 
 export default locale;

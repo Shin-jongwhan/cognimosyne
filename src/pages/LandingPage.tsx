@@ -29,6 +29,24 @@ export default function LandingPage() {
   const [loginLanguage, setLoginLanguage] = useState<LoginLanguageCode>(() => resolveInitialLoginLanguage());
   const selectedLanguage = loginLanguageMap[loginLanguage] ?? loginLanguageMap[DEFAULT_LOGIN_LANGUAGE];
 
+  const setPostLoginRedirect = () => {
+    try {
+      window.sessionStorage.setItem("redirect", "/user-dashboard/main");
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const handleLogin = () => {
+    setPostLoginRedirect();
+    auth.signinRedirect({ extraQueryParams: { lang: loginLanguage } });
+  };
+
+  const handleSignup = () => {
+    setPostLoginRedirect();
+    auth.signinRedirect({ extraQueryParams: { lang: loginLanguage, screen_hint: "signup" } });
+  };
+
   const handleLoginLanguageChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const next = event.target.value as LoginLanguageCode;
     setLoginLanguage(loginLanguageMap[next] ? next : DEFAULT_LOGIN_LANGUAGE);
@@ -133,16 +151,12 @@ export default function LandingPage() {
           ) : (
             <div className="flex items-center gap-1 sm:gap-2">
               <button
-                onClick={() => auth.signinRedirect({ extraQueryParams: { lang: loginLanguage } })}
+                onClick={handleLogin}
                 className="landing-header__button">
                 {selectedLanguage.strings.login}
               </button>
               <button
-                onClick={() =>
-                  auth.signinRedirect({
-                    extraQueryParams: { lang: loginLanguage, screen_hint: 'signup' },
-                  })
-                }
+                onClick={handleSignup}
                 className="landing-header__button landing-header__button--primary">
                 {selectedLanguage.strings.signup}
               </button>

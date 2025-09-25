@@ -60,10 +60,16 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #0b1120;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 h1 {
@@ -115,6 +121,54 @@ button:focus-visible {
   max-width: 80rem;
   margin-left: auto;
   margin-right: 0;
+}
+
+.dashboard-header__inner {
+  margin-left: 0;
+  margin-right: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.dashboard-header__brand {
+  font-weight: 700;
+  font-size: clamp(0.9rem, 1vw + 0.65rem, 1.1rem);
+  letter-spacing: 0.01em;
+  color: #f8fafc;
+}
+
+.dashboard-nav__trigger {
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.mobile-menu__toggle,
+.mobile-menu__close {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.mobile-menu__toggle:hover,
+.mobile-menu__toggle:focus-visible,
+.mobile-menu__close:hover,
+.mobile-menu__close:focus-visible {
+  color: #c7d2fe;
+}
+
+.mobile-menu__logout {
+  background-color: #4f46e5 !important;
+  color: #f9fafc !important;
+  border: none !important;
+}
+
+.mobile-menu__logout:hover,
+.mobile-menu__logout:focus-visible {
+  background-color: #4338ca !important;
 }
 
 
