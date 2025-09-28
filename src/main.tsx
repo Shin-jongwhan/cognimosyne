@@ -3,12 +3,14 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "react-oidc-context";
+import type { UserManagerSettings } from "oidc-client-ts";
 import LandingPage from "./pages/LandingPage";
 import PolicyPage from "./pages/PolicyPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import UserDashboardMain from "./pages/UserDashboardMain";
 import UserDashboardCreditUsage from "./pages/UserDashboardCreditUsage";
 import AwsCognitoSignupTestPage from "./pages/AwsCognitoSignupTestPage";
+import TestGetCreditPage from "./pages/TestGetCreditPage";
 import "./index.css";
 import {
   DEFAULT_LOGIN_LANGUAGE,
@@ -17,8 +19,11 @@ import {
   resolveInitialLoginLanguage,
   type LoginLanguageCode,
 } from "./i18n/loginLanguages";
-import { clearCognitoIdentityCache } from "./services/awsCredentials";
+import { clearCognitoIdentityCache, fetchTemporaryAwsCredentials } from "./services/awsCredentials";
 import { COGNITO } from "./config/cognito";
+import { resolveAppRedirectUri } from "./config/urls";
+
+const LAST_STS_TOKEN_KEY = "aws-last-sts-token";
 
 function Redirector() {
   const navigate = useNavigate();
@@ -30,9 +35,10 @@ function Redirector() {
     const currentPath = window.location.pathname;
     const currentTarget = `${currentPath}${window.location.search}${window.location.hash}`;
 
-    let redirectTarget = currentPath.startsWith("/user-dashboard/")
-      ? currentTarget
-      : "/user-dashboard/main";
+    let redirectTarget = currentTarget;
+    if (!currentPath.startsWith("/user-dashboard/") && !currentPath.startsWith("/test/")) {
+      redirectTarget = "/user-dashboard/main";
+    }
 
     try {
       const stored = window.sessionStorage.getItem("redirect");
@@ -98,12 +104,51 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
       if (COGNITO.region && COGNITO.identityPoolId) {
         clearCognitoIdentityCache(COGNITO.region, COGNITO.identityPoolId);
       }
+      try {
+        window.sessionStorage.removeItem(LAST_STS_TOKEN_KEY);
+      } catch {
+        // ignore storage errors
+      }
       exposeIdToken(oidc.client_id);
       return;
     }
     const globalWindow = window as typeof window & { idToken?: string | null };
     globalWindow.idToken = auth.user?.id_token ?? null;
     exposeIdToken(oidc.client_id);
+  }, [auth.isAuthenticated, auth.user?.id_token]);
+
+  React.useEffect(() => {
+    if (!auth.isAuthenticated || !auth.user?.id_token) return;
+
+    const idToken = auth.user.id_token;
+    try {
+      const lastToken = window.sessionStorage.getItem(LAST_STS_TOKEN_KEY);
+      if (lastToken === idToken) {
+        return;
+      }
+    } catch {
+      // ignore storage errors
+    }
+
+    let cancelled = false;
+    void fetchTemporaryAwsCredentials(idToken)
+      .then(() => {
+        if (cancelled) return;
+        try {
+          window.sessionStorage.setItem(LAST_STS_TOKEN_KEY, idToken);
+        } catch {
+          // ignore storage errors
+        }
+      })
+      .catch((error) => {
+        if (import.meta.env?.DEV) {
+          console.error("[RequireAuth] failed to fetch temporary AWS credentials", error);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [auth.isAuthenticated, auth.user?.id_token]);
 
   React.useEffect(() => {
@@ -155,18 +200,25 @@ function RouterApp() {
           )}
         />
         <Route path="/test/aws-cognito-signup" element={<AwsCognitoSignupTestPage />} />
+        <Route
+          path="/test/get_credit"
+          element={(
+            <RequireAuth>
+              <TestGetCreditPage />
+            </RequireAuth>
+          )}
+        />
       </Routes>
     </>
   );
 }
 
-const isLocal = window.location.origin.startsWith("http://localhost");
-const redirectUri = isLocal ? "http://localhost:5173/" : "https://cognimosyne.com/";
-const authority = "https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_2Qo22vonR";
+const redirectUri = resolveAppRedirectUri();
+const authority = `https://cognito-idp.${COGNITO.region}.amazonaws.com/${COGNITO.userPoolId}`;
 
 const oidc = {
   authority: authority,                               // Hosted UI 도메인
-  client_id: "6le4d5j955jnmr8h4pe4vjs7ci", // App client ID
+  client_id: COGNITO.userPoolWebClientId, // App client ID
   redirect_uri: redirectUri,               // Callback URL (콘솔과 정확히 일치)
   post_logout_redirect_uri: redirectUri,   // Sign-out URL
   response_type: "code",                   // PKCE 자동
@@ -177,6 +229,31 @@ const oidc = {
   onSigninCallback: () => {
     const clean = redirectUri;
     window.history.replaceState({}, document.title, clean);
+    exposeIdToken(oidc.client_id);
+  },
+  matchSignoutCallback: (settings: UserManagerSettings) => {
+    if (typeof window === "undefined" || !settings.post_logout_redirect_uri) {
+      return false;
+    }
+    try {
+      const expected = new URL(settings.post_logout_redirect_uri, window.location.origin);
+      const current = new URL(window.location.href);
+      return expected.origin === current.origin && expected.pathname === current.pathname;
+    } catch {
+      return false;
+    }
+  },
+  onSignoutCallback: () => {
+    try {
+      window.history.replaceState({}, document.title, redirectUri);
+    } catch {
+      // ignore history errors
+    }
+    try {
+      window.sessionStorage.removeItem("redirect");
+    } catch {
+      // ignore storage errors
+    }
     exposeIdToken(oidc.client_id);
   },
 };

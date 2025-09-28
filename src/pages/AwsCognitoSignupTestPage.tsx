@@ -1,5 +1,5 @@
 import { type FormEvent, useMemo, useState } from "react";
-import { COGNITO, COGNITO_ENDPOINT } from "../config/cognito";
+import { COGNITO, COGNITO_IDP_ENDPOINT } from "../config/cognito";
 
 type SignupForm = {
   email: string;
@@ -32,7 +32,7 @@ function generateSecurePassword() {
 }
 
 async function callCognito<T>(target: string, payload: Record<string, unknown>): Promise<T> {
-  const response = await fetch(COGNITO_ENDPOINT, {
+  const response = await fetch(COGNITO_IDP_ENDPOINT, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-amz-json-1.1",

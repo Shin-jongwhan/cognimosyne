@@ -12,6 +12,7 @@ import {
   type UserDashboardCopy,
   type UserDashboardNavGroup,
 } from "../i18n/loginLanguages";
+import { signOutFromCognito } from "../services/cognitoLogout";
 
 const resolveDashboardLanguage = (preferred?: LoginLanguageCode): LoginLanguageCode => {
   const candidates: LoginLanguageCode[] = [];
@@ -120,35 +121,7 @@ export default function UserDashboardMain() {
   }, [isMobileMenuOpen, closeMobileMenu]);
 
   const handleLogout = useCallback(async () => {
-    const clientId = "6le4d5j955jnmr8h4pe4vjs7ci";
-    const domain = "https://ap-northeast-22qo22vonr.auth.ap-northeast-2.amazoncognito.com";
-    const redirectUri = window.location.origin.startsWith("http://localhost")
-      ? "http://localhost:5173/"
-      : "https://cognimosyne.com/";
-
-    try {
-      await auth.removeUser();
-    } catch {
-      // ignore storage errors
-    }
-
-    try {
-      await auth.signoutRedirect({
-        post_logout_redirect_uri: redirectUri,
-        extraQueryParams: {
-          client_id: clientId,
-          logout_uri: redirectUri,
-        },
-      });
-    } catch {
-      try {
-        window.sessionStorage.clear();
-      } catch {
-        // ignore storage errors
-      }
-
-      window.location.href = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(redirectUri)}`;
-    }
+    await signOutFromCognito(auth);
   }, [auth]);
 
   const handleAvatarButtonClick = () => {

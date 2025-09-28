@@ -1,0 +1,1 @@
+{"statusCode": 200, "headers": {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "content-type,x-id-token,authorization", "Access-Control-Allow-Methods": "POST,OPTIONS", "Content-Type": "application/json"}, "body": "{\"status\": \"success\", \"credit\": 999, \"mileage\": 999, \"updated_at\": \"2025-09-28T04:08:12Z\", \"error_message\": \"none\"}"}

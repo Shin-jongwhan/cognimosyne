@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 import { SignatureV4 } from "@aws-sdk/signature-v4";
 import { Sha256 } from "@aws-crypto/sha256-browser";
 import { HttpRequest } from "@aws-sdk/protocol-http";
+
 import {
   DEFAULT_LOGIN_LANGUAGE,
   LOGIN_LANGUAGE_STORAGE_KEY,
@@ -13,14 +14,17 @@ import {
   type CreditUsageCopy,
   type LoginLanguageCode,
 } from "../i18n/loginLanguages";
-import {
-  fetchTemporaryAwsCredentials,
-  loadStoredAwsCredentials,
-  persistAwsCredentials,
-  type AwsTemporaryCredentials,
-} from "../services/awsCredentials";
+import { fetchTemporaryAwsCredentials } from "../services/awsCredentials";
 import { resolveLambdaFunctionUrl } from "../config/lambda";
 import { COGNITO } from "../config/cognito";
+
+type LambdaResponse = {
+  status?: string;
+  credit?: number;
+  mileage?: number;
+  updated_at?: string;
+  error_message?: string;
+};
 
 const resolveCreditUsageLanguage = (preferred?: LoginLanguageCode): LoginLanguageCode => {
   const candidates: LoginLanguageCode[] = [];
@@ -54,8 +58,6 @@ const formatTimestamp = (date: Date, locale: string) =>
 export default function UserDashboardCreditUsage() {
   const auth = useAuth();
   const [languageCode, setLanguageCode] = useState<LoginLanguageCode>(() => resolveInitialLoginLanguage());
-  const [awsCredentials, setAwsCredentials] = useState<AwsTemporaryCredentials | null>(() => loadStoredAwsCredentials());
-  const pendingCredentialsRef = useRef<Promise<AwsTemporaryCredentials> | null>(null);
 
   useEffect(() => {
     try {
@@ -69,7 +71,6 @@ export default function UserDashboardCreditUsage() {
   }, []);
 
   const resolvedLanguage = useMemo(() => resolveCreditUsageLanguage(languageCode), [languageCode]);
-
   const creditUsageCopy = useMemo<CreditUsageCopy>(() => {
     const definition = loginLanguageMap[resolvedLanguage]?.userDashboardPages?.creditUsage;
     if (definition) return definition;
@@ -81,225 +82,114 @@ export default function UserDashboardCreditUsage() {
     };
   }, [resolvedLanguage]);
 
-  const [balances, setBalances] = useState<Record<string, number | null>>(() => ({}));
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [result, setResult] = useState<LambdaResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const hasInitialFetchRef = useRef(false);
-  const previousTokenRef = useRef<string | null>(null);
 
-  const ensureAwsCredentials = useCallback(async (): Promise<AwsTemporaryCredentials> => {
-    if (!auth.user?.id_token) {
+  const invokeLambda = useCallback(async () => {
+    const idToken = auth.user?.id_token;
+    if (!idToken) {
       throw new Error("ID 토큰이 없어 임시 자격을 발급할 수 없습니다.");
     }
 
-    let current = awsCredentials ?? loadStoredAwsCredentials();
+    const credentials = await fetchTemporaryAwsCredentials(idToken);
+    const lambdaUrl = resolveLambdaFunctionUrl("creditUsage");
+    const url = new URL(lambdaUrl);
 
-    const isExpiringSoon = (credential: AwsTemporaryCredentials | null): boolean => {
-      if (!credential?.expiration) return true;
-      const bufferMs = 2 * 60 * 1000; // 2 minutes buffer
-      return credential.expiration.getTime() - Date.now() < bufferMs;
-    };
+    const bodyPayload = "{}";
 
-    if (current && !isExpiringSoon(current)) {
-      return current;
+    const request = new HttpRequest({
+      method: "POST",
+      protocol: url.protocol,
+      hostname: url.hostname,
+      port: url.port ? Number(url.port) : undefined,
+      path: url.pathname || "/",
+      headers: {
+        host: url.host,
+        "content-type": "application/json",
+        "x-id-token": idToken,
+        "x-amz-security-token": credentials.sessionToken,
+      },
+      body: bodyPayload,
+    });
+
+    const signer = new SignatureV4({
+      credentials: {
+        accessKeyId: credentials.accessKeyId,
+        secretAccessKey: credentials.secretAccessKey,
+        sessionToken: credentials.sessionToken,
+      },
+      region: COGNITO.region,
+      service: "lambda",
+      sha256: Sha256,
+    });
+
+    const signedRequest = await signer.sign(request);
+
+    const headers = new Headers();
+    for (const [key, value] of Object.entries(signedRequest.headers)) {
+      if (!value || key.toLowerCase() === "host") continue;
+      headers.set(key, value);
     }
+    headers.set("x-id-token", idToken);
 
-    if (pendingCredentialsRef.current) {
-      if (import.meta.env?.DEV) {
-        console.debug("[cognito] awaiting in-flight credentials");
-      }
-      return pendingCredentialsRef.current;
-    }
+    const response = await fetch(lambdaUrl, {
+      method: signedRequest.method ?? "POST",
+      headers,
+      body:
+        typeof signedRequest.body === "string" || signedRequest.body instanceof Uint8Array
+          ? signedRequest.body
+          : bodyPayload,
+    });
 
-    const promise = fetchTemporaryAwsCredentials(auth.user.id_token)
-      .then((refreshed) => {
-        setAwsCredentials(refreshed);
-        persistAwsCredentials(refreshed);
-        return refreshed;
-      })
-      .finally(() => {
-        pendingCredentialsRef.current = null;
-      });
-
-    pendingCredentialsRef.current = promise;
-
-    return promise;
-  }, [auth.user?.id_token, awsCredentials]);
-
-  const refreshBalances = useCallback(() => {
-    if (!auth.user?.id_token) {
-      setErrorMessage("ID 토큰이 없어 데이터를 불러올 수 없습니다.");
-      setBalances({});
-      setLastUpdated(null);
-      return () => {};
-    }
-
-    if (!COGNITO.identityPoolId) {
-      setErrorMessage("Identity Pool ID가 설정되어 있지 않습니다.");
-      setBalances({});
-      setLastUpdated(null);
-      return () => {};
-    }
-
-    let isActive = true;
-    const abortController = new AbortController();
-
-    const execute = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
-
+    const rawBody = await response.text();
+    let parsed: LambdaResponse | null = null;
+    if (rawBody) {
       try {
-        let credentials: AwsTemporaryCredentials;
-        try {
-          credentials = await ensureAwsCredentials();
-        } catch (error) {
-          console.error(
-            "STS 발급 실패:",
-            (error as any)?.name,
-            (error as any)?.message,
-            (error as any)?.$metadata?.httpStatusCode,
-            error,
-          );
-          throw error;
-        }
-        if (!isActive || abortController.signal.aborted) return;
-
-        const lambdaUrl = resolveLambdaFunctionUrl("creditUsage");
-        const url = new URL(lambdaUrl);
-        const bodyPayload = JSON.stringify({});
-        const idToken = auth.user?.id_token;
-
-        if (!idToken) {
-          throw new Error("ID 토큰이 만료되었습니다. 다시 로그인해 주세요.");
-        }
-
-        const request = new HttpRequest({
-          method: "POST",
-          protocol: url.protocol,
-          hostname: url.hostname,
-          port: url.port ? Number(url.port) : undefined,
-          path: url.pathname || "/",
-          headers: {
-            host: url.host,
-            "content-type": "application/json",
-            "x-id-token": idToken,
-            "x-amz-security-token": credentials.sessionToken,
-          },
-          body: bodyPayload,
-        });
-
-        const signer = new SignatureV4({
-          credentials: {
-            accessKeyId: credentials.accessKeyId,
-            secretAccessKey: credentials.secretAccessKey,
-            sessionToken: credentials.sessionToken,
-          },
-          region: COGNITO.region,
-          service: "lambda",
-          sha256: Sha256,
-        });
-
-        const signedRequest = await signer.sign(request);
-        if (!isActive || abortController.signal.aborted) return;
-
-        const headers = new Headers();
-        for (const [key, value] of Object.entries(signedRequest.headers)) {
-          if (!value) continue;
-          if (key.toLowerCase() === "host") continue;
-          headers.set(key, value);
-        }
-        headers.set("x-id-token", idToken);
-
-        const response = await fetch(lambdaUrl, {
-          method: signedRequest.method ?? "POST",
-          headers,
-          body: typeof signedRequest.body === "string" || signedRequest.body instanceof Uint8Array ? signedRequest.body : bodyPayload,
-          signal: abortController.signal,
-        });
-
-        if (!response.ok) {
-          const detail = await response.text();
-          throw new Error(detail || `Lambda 호출에 실패했습니다. (HTTP ${response.status})`);
-        }
-
-        const data: {
-          status?: string;
-          credit?: number;
-          mileage?: number;
-          updated_at?: string;
-          error_message?: string;
-        } = await response.json();
-
-        if (data.status !== "success") {
-          throw new Error(
-            data.error_message && data.error_message !== "none"
-              ? data.error_message
-              : "Lambda에서 오류가 반환되었습니다.",
-          );
-        }
-
-        const mapping: Record<string, number | null> = {};
-        for (const item of creditUsageCopy.items) {
-          if (item.key === "availableCredits") {
-            mapping[item.key] = typeof data.credit === "number" ? data.credit : 0;
-          } else if (item.key === "availableMileage") {
-            mapping[item.key] = typeof data.mileage === "number" ? data.mileage : 0;
-          } else {
-            const value = (data as Record<string, unknown>)[item.key];
-            mapping[item.key] = typeof value === "number" ? value : 0;
-          }
-        }
-
-        if (!isActive) return;
-        setBalances(mapping);
-
-        if (data.updated_at) {
-          const parsed = new Date(data.updated_at);
-          setLastUpdated(Number.isNaN(parsed.getTime()) ? new Date() : parsed);
-        } else {
-          setLastUpdated(new Date());
-        }
-        setErrorMessage(null);
-      } catch (error) {
-        if (!isActive || abortController.signal.aborted) return;
-        console.error("크레딧 정보를 불러오지 못했습니다.", error);
-        setErrorMessage(error instanceof Error ? error.message : "크레딧 정보를 불러오는 중 오류가 발생했습니다.");
-        setBalances({});
-        setLastUpdated(null);
-      } finally {
-        if (!isActive || abortController.signal.aborted) return;
-        setIsLoading(false);
+        parsed = JSON.parse(rawBody) as LambdaResponse;
+      } catch {
+        parsed = null;
       }
-    };
+    }
 
-    void execute();
+    if (!response.ok) {
+      throw new Error(parsed?.error_message || rawBody || `Lambda 호출 실패 (HTTP ${response.status})`);
+    }
 
-    return () => {
-      isActive = false;
-      abortController.abort();
+    return parsed ?? {
+      status: "success",
+      credit: undefined,
+      mileage: undefined,
+      updated_at: undefined,
+      error_message: undefined,
     };
-  }, [auth.user?.id_token, creditUsageCopy.items, ensureAwsCredentials]);
+  }, [auth.user?.id_token]);
+
+  const handleRefresh = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      const data = await invokeLambda();
+      setResult(data);
+    } catch (error) {
+      setResult(null);
+      setErrorMessage(error instanceof Error ? error.message : "크레딧 정보를 가져오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [invokeLambda]);
 
   useEffect(() => {
-    const currentToken = auth.user?.id_token ?? null;
-    if (previousTokenRef.current !== currentToken) {
-      hasInitialFetchRef.current = false;
-      previousTokenRef.current = currentToken;
-    }
-    if (!currentToken) {
-      pendingCredentialsRef.current = null;
-      return;
-    }
-    if (hasInitialFetchRef.current) return;
-    hasInitialFetchRef.current = true;
-    const cleanup = refreshBalances();
-    return cleanup;
-  }, [auth.user?.id_token, refreshBalances]);
-
-  const hasValues = creditUsageCopy.items.some((item) => balances[item.key] != null);
+    void handleRefresh();
+  }, [handleRefresh]);
 
   const localeForFormat = resolvedLanguage.replace("_", "-");
+
+  const formatValue = (value: number | string | undefined | null, fallback = "-") => {
+    if (value == null) return fallback;
+    if (typeof value === "number") return formatAmount(value, localeForFormat);
+    return String(value);
+  };
 
   return (
     <main className="relative min-h-screen bg-slate-950 text-white">
@@ -319,26 +209,24 @@ export default function UserDashboardCreditUsage() {
         </header>
 
         <section className="mb-6 flex flex-wrap items-center gap-3 text-sm text-slate-300">
-          {lastUpdated && creditUsageCopy.lastUpdatedLabel ? (
+          {result?.updated_at ? (
             <span className="rounded-full bg-slate-900/60 px-3 py-1">
-              {creditUsageCopy.lastUpdatedLabel}: {formatTimestamp(lastUpdated, localeForFormat)}
+              {creditUsageCopy.lastUpdatedLabel ?? "최근 갱신"}: {formatTimestamp(new Date(result.updated_at), localeForFormat)}
             </span>
           ) : null}
-          {creditUsageCopy.refreshCta ? (
-            <button
-              type="button"
-              onClick={refreshBalances}
-              disabled={isLoading}
-              className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold transition ${
-                isLoading
-                  ? "cursor-not-allowed border-slate-700 text-slate-500"
-                  : "border-indigo-400/40 text-indigo-200 hover:border-indigo-300 hover:text-white"
-              }`}
-              aria-busy={isLoading}
-            >
-              {isLoading ? "불러오는 중..." : creditUsageCopy.refreshCta}
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold transition ${
+              isLoading
+                ? "cursor-not-allowed border-slate-700 text-slate-500"
+                : "border-indigo-400/40 text-indigo-200 hover:border-indigo-300 hover:text-white"
+            }`}
+            aria-busy={isLoading}
+          >
+            새로고침
+          </button>
           {errorMessage ? (
             <span className="rounded-full bg-red-500/20 px-3 py-1 text-xs font-medium text-red-200">
               {errorMessage}
@@ -346,36 +234,70 @@ export default function UserDashboardCreditUsage() {
           ) : null}
         </section>
 
-        {hasValues ? (
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {creditUsageCopy.items.map((item) => {
-              const value = balances[item.key];
-              return (
-                <li key={item.key} className="rounded-xl border border-white/5 bg-slate-900/60 p-5 shadow-lg">
-                  <div className="flex items-baseline justify-between gap-4">
-                    <span className="text-sm font-medium text-slate-300">{item.label}</span>
-                    {value != null ? (
-                      <span className="text-3xl font-semibold text-white">
-                        {formatAmount(value, localeForFormat)}
-                        {item.unitLabel ? <span className="ml-1 text-base text-slate-400">{item.unitLabel}</span> : null}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-slate-500">-</span>
-                    )}
-                  </div>
-                  {item.helperText ? <p className="mt-3 text-sm text-slate-400">{item.helperText}</p> : null}
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-slate-700/70 bg-slate-900/40 p-10 text-center">
-            <h2 className="text-xl font-semibold text-white">{creditUsageCopy.emptyState?.title ?? "데이터가 없습니다."}</h2>
-            {creditUsageCopy.emptyState?.description ? (
-              <p className="mt-2 max-w-md text-sm text-slate-400">{creditUsageCopy.emptyState.description}</p>
-            ) : null}
-          </div>
-        )}
+        <section className="grid gap-4 sm:grid-cols-2">
+          <article className="rounded-xl border border-white/5 bg-slate-900/60 p-5 shadow-lg">
+            <div className="text-sm font-medium text-slate-300">
+              {creditUsageCopy.items.find((item) => item.key === "availableCredits")?.label ?? "보유 크레딧"}
+            </div>
+            <div className="mt-3 text-3xl font-semibold text-white">
+              {formatValue(result?.credit)}
+              <span className="ml-1 text-base text-slate-400">
+                {creditUsageCopy.items.find((item) => item.key === "availableCredits")?.unitLabel ?? ""}
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-slate-400">
+              {creditUsageCopy.items.find((item) => item.key === "availableCredits")?.helperText ?? "서비스 이용에 사용할 수 있는 총 크레딧입니다."}
+            </p>
+          </article>
+
+          <article className="rounded-xl border border-white/5 bg-slate-900/60 p-5 shadow-lg">
+            <div className="text-sm font-medium text-slate-300">
+              {creditUsageCopy.items.find((item) => item.key === "availableMileage")?.label ?? "보유 마일리지"}
+            </div>
+            <div className="mt-3 text-3xl font-semibold text-white">
+              {formatValue(result?.mileage)}
+              <span className="ml-1 text-base text-slate-400">
+                {creditUsageCopy.items.find((item) => item.key === "availableMileage")?.unitLabel ?? ""}
+              </span>
+            </div>
+            <p className="mt-3 text-sm text-slate-400">
+              {creditUsageCopy.items.find((item) => item.key === "availableMileage")?.helperText ?? "프로모션 등으로 적립된 마일리지 잔액입니다."}
+            </p>
+          </article>
+        </section>
+
+        <section className="mt-8 rounded-xl border border-white/5 bg-slate-900/60 p-5 text-xs text-slate-300">
+          <header className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white">Lambda 응답</h2>
+            <span className="rounded-full bg-slate-800/80 px-2 py-0.5 text-[11px] uppercase tracking-wide text-slate-400">
+              {result?.status ?? "unknown"}
+            </span>
+          </header>
+          {result ? (
+            <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div>
+                <dt className="font-medium text-slate-400">credit</dt>
+                <dd className="text-white">{formatValue(result.credit)}</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-slate-400">mileage</dt>
+                <dd className="text-white">{formatValue(result.mileage)}</dd>
+              </div>
+              <div className="sm:col-span-2">
+                <dt className="font-medium text-slate-400">updated_at</dt>
+                <dd className="text-white">{formatValue(result.updated_at)}</dd>
+              </div>
+              {result.error_message && result.error_message !== "none" ? (
+                <div className="sm:col-span-2">
+                  <dt className="font-medium text-slate-400">error_message</dt>
+                  <dd className="text-white">{result.error_message}</dd>
+                </div>
+              ) : null}
+            </dl>
+          ) : (
+            <p className="text-slate-500">데이터가 없습니다. 새로고침 버튼을 눌러 다시 시도해 주세요.</p>
+          )}
+        </section>
       </div>
     </main>
   );

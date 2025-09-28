@@ -1,7 +1,7 @@
 // /src/pages/LandingPage.tsx
 import HeroSection from "../components/HeroSection";
 import { motion, useAnimation, useInView } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useAuth } from "react-oidc-context";
 
@@ -14,15 +14,7 @@ import {
   type LoginLanguageCode,
 } from "../i18n/loginLanguages";
 
-const logoutToCurrentOrigin = () => {
-  const clientId = "6le4d5j955jnmr8h4pe4vjs7ci";
-  const domain = "https://ap-northeast-22qo22vonr.auth.ap-northeast-2.amazoncognito.com";
-  const redirectUri = window.location.origin.startsWith("http://localhost")
-    ? "http://localhost:5173/"
-    : "https://cognimosyne.com/";
-  try { window.sessionStorage.clear(); } catch {}
-  window.location.href = `${domain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(redirectUri)}`;
-};
+import { signOutFromCognito } from "../services/cognitoLogout";
 
 export default function LandingPage() {
   const auth = useAuth();
@@ -46,6 +38,10 @@ export default function LandingPage() {
     setPostLoginRedirect();
     auth.signinRedirect({ extraQueryParams: { lang: loginLanguage, screen_hint: "signup" } });
   };
+
+  const handleLogout = useCallback(() => {
+    void signOutFromCognito(auth);
+  }, [auth]);
 
   const handleLoginLanguageChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const next = event.target.value as LoginLanguageCode;
@@ -143,7 +139,7 @@ export default function LandingPage() {
                 {auth.user?.profile?.email}
               </span>
               <button
-                onClick={logoutToCurrentOrigin}
+                onClick={handleLogout}
                 className="landing-header__button">
                 {selectedLanguage.strings.logout}
               </button>

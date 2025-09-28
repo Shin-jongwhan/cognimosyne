@@ -1,5 +1,5 @@
 import { fromCognitoIdentityPool } from "@aws-sdk/credential-providers";
-import { COGNITO } from "../config/cognito";
+import { COGNITO, COGNITO_ISSUER } from "../config/cognito";
 
 export type AwsTemporaryCredentials = {
   accessKeyId: string;
@@ -9,7 +9,8 @@ export type AwsTemporaryCredentials = {
   identityId: string | null;
 };
 
-export const LOGINS_KEY = "cognito-idp." + COGNITO.region + ".amazonaws.com/" + COGNITO.userPoolId;
+const loginProvider = new URL(COGNITO_ISSUER);
+export const LOGINS_KEY = `${loginProvider.host}${loginProvider.pathname}`;
 export const AWS_TEMP_CREDENTIALS_STORAGE_KEY = "aws-temporary-credentials";
 export const clearCognitoIdentityCache = (region: string, identityPoolId: string) => {
   try {
