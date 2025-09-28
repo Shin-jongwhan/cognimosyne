@@ -94,9 +94,9 @@ const locale: LoginLanguageDefinition = {
           {
             key: "credit-overview",
             title: "크레딧 조회",
-            description: "보유 중인 크레딧과 최근 사용 내역을 확인합니다.",
-            ctaPath: "/user-dashboard/credits",
-            isAvailable: false,
+            description: "보유 중인 크레딧과 마일리지 현황을 확인합니다.",
+            ctaPath: "/user-dashboard/credit/usage",
+            isAvailable: true,
           },
           {
             key: "credit-topup",
@@ -133,14 +133,14 @@ const locale: LoginLanguageDefinition = {
         items: [
           {
             key: "subtitle-request",
-            title: "자막 만들기",
+            title: "자막 제작",
             description: "AI 기반 자막 생성을 요청하고 결과를 편집합니다.",
             ctaPath: "/user-dashboard/services/subtitles",
             isAvailable: false,
           },
           {
             key: "translation-request",
-            title: "번역 요청",
+            title: "번역",
             description: "원하는 언어로 번역을 요청하고 세부 옵션을 선택합니다.",
             ctaPath: "/user-dashboard/services/translation",
             isAvailable: false,
@@ -158,6 +158,32 @@ const locale: LoginLanguageDefinition = {
     actions: {
       open: "바로가기",
       comingSoon: "준비 중",
+    },
+  },
+  userDashboardPages: {
+    creditUsage: {
+      title: "크레딧 조회",
+      subtitle: "보유 중인 크레딧과 마일리지를 한눈에 확인하세요.",
+      lastUpdatedLabel: "최근 갱신",
+      refreshCta: "새로고침",
+      items: [
+        {
+          key: "availableCredits",
+          label: "보유 크레딧",
+          helperText: "서비스 이용에 사용할 수 있는 총 크레딧입니다.",
+          unitLabel: "크레딧",
+        },
+        {
+          key: "availableMileage",
+          label: "보유 마일리지",
+          helperText: "프로모션 등으로 적립된 마일리지 잔액입니다.",
+          unitLabel: "포인트",
+        },
+      ],
+      emptyState: {
+        title: "표시할 잔액이 없습니다.",
+        description: "크레딧 충전이나 마일리지 적립 후 다시 확인해 주세요.",
+      },
     },
   },
 };

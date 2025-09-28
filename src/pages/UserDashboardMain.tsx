@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 import {
   DEFAULT_LOGIN_LANGUAGE,
@@ -215,17 +216,35 @@ export default function UserDashboardMain() {
                         tabIndex={-1}
                       >
                         <ul className="flex flex-col py-2">
-                          {group.items.map((item) => (
-                            <li key={item.key}>
-                              <div className="w-full px-4 py-3 text-sm text-slate-200 hover:bg-white/10 transition rounded-xl cursor-default">
-                                <p className="font-semibold">{item.title}</p>
-                                {item.description && (
-                                  <p className="mt-1 text-xs text-slate-400 leading-relaxed">{item.description}</p>
-                                )}
-                                <p className="mt-2 text-xs font-medium text-violet-300">{dashboardCopy.actions.comingSoon}</p>
-                              </div>
-                            </li>
-                          ))}
+                          {group.items.map((item) => {
+                            const isAvailable = Boolean(item.ctaPath && item.isAvailable);
+                            const actionLabel = isAvailable
+                              ? dashboardCopy.actions.open
+                              : dashboardCopy.actions.comingSoon;
+                            return (
+                              <li key={item.key}>
+                                <div className="w-full px-4 py-3 text-sm text-slate-200 hover:bg-white/10 transition rounded-xl">
+                                  <p className="font-semibold">{item.title}</p>
+                                  {item.description && (
+                                    <p className="mt-1 text-xs text-slate-400 leading-relaxed">{item.description}</p>
+                                  )}
+                                  {isAvailable ? (
+                                    <Link
+                                      to={item.ctaPath!}
+                                      onClick={() => setOpenGroupKey(null)}
+                                      className="mt-3 inline-flex items-center rounded-full border border-indigo-400/40 px-3 py-1 text-xs font-semibold text-indigo-200 transition hover:border-indigo-300 hover:text-white"
+                                    >
+                                      {actionLabel}
+                                    </Link>
+                                  ) : (
+                                    <span className="mt-3 inline-flex items-center rounded-full bg-slate-800/70 px-3 py-1 text-xs font-medium text-slate-400">
+                                      {actionLabel}
+                                    </span>
+                                  )}
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}
@@ -335,15 +354,33 @@ export default function UserDashboardMain() {
                       </button>
                       {group.items.length > 0 && (
                         <ul className="space-y-2">
-                          {group.items.map((item) => (
-                            <li key={item.key} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-                              {item.description && (
-                                <p className="mt-1 text-xs text-slate-500 leading-relaxed">{item.description}</p>
-                              )}
-                              <p className="mt-2 text-xs font-medium text-violet-500">{dashboardCopy.actions.comingSoon}</p>
-                            </li>
-                          ))}
+                          {group.items.map((item) => {
+                            const isAvailable = Boolean(item.ctaPath && item.isAvailable);
+                            const actionLabel = isAvailable
+                              ? dashboardCopy.actions.open
+                              : dashboardCopy.actions.comingSoon;
+                            return (
+                              <li key={item.key} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                                <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                                {item.description && (
+                                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">{item.description}</p>
+                                )}
+                                {isAvailable ? (
+                                  <Link
+                                    to={item.ctaPath!}
+                                    onClick={closeMobileMenu}
+                                    className="mt-3 inline-flex items-center justify-center rounded-full border border-indigo-400/60 px-3 py-1 text-xs font-semibold text-indigo-600 transition hover:border-indigo-500 hover:text-indigo-700"
+                                  >
+                                    {actionLabel}
+                                  </Link>
+                                ) : (
+                                  <span className="mt-3 inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-400">
+                                    {actionLabel}
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       )}
                     </li>

@@ -74,6 +74,30 @@ export type LoginLanguageDefinition = {
   strings: LoginLanguageStrings;
   landingPage: LandingPageCopy;
   userDashboard?: UserDashboardCopy;
+  userDashboardPages?: UserDashboardPagesCopy;
+};
+
+export type CreditUsageListItem = {
+  key: string;
+  label: string;
+  helperText?: string;
+  unitLabel?: string;
+};
+
+export type CreditUsageCopy = {
+  title: string;
+  subtitle?: string;
+  lastUpdatedLabel?: string;
+  refreshCta?: string;
+  items: CreditUsageListItem[];
+  emptyState?: {
+    title: string;
+    description?: string;
+  };
+};
+
+export type UserDashboardPagesCopy = {
+  creditUsage?: CreditUsageCopy;
 };
 
 

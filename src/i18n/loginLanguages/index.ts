@@ -11,7 +11,23 @@ import pt_BR from "./pt_BR";
 import zh_CN from "./zh_CN";
 import zh_TW from "./zh_TW";
 
-export { type LoginLanguageDefinition, type LoginLanguageStrings, type LandingPageCopy, type LandingPageFeaturesSection, type LandingPageValuesSection, type LandingPageFooter, type LandingPageFeatureCard, type LandingPageValueCard, type LandingPagePolicyLink, type UserDashboardCopy, type UserDashboardNavGroup, type UserDashboardItem } from "./types";
+export {
+  type LoginLanguageDefinition,
+  type LoginLanguageStrings,
+  type LandingPageCopy,
+  type LandingPageFeaturesSection,
+  type LandingPageValuesSection,
+  type LandingPageFooter,
+  type LandingPageFeatureCard,
+  type LandingPageValueCard,
+  type LandingPagePolicyLink,
+  type UserDashboardCopy,
+  type UserDashboardNavGroup,
+  type UserDashboardItem,
+  type CreditUsageCopy,
+  type CreditUsageListItem,
+  type UserDashboardPagesCopy,
+} from "./types";
 
 export const LOGIN_LANGUAGE_STORAGE_KEY = "cognito-login-language";
 

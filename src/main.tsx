@@ -7,6 +7,7 @@ import LandingPage from "./pages/LandingPage";
 import PolicyPage from "./pages/PolicyPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import UserDashboardMain from "./pages/UserDashboardMain";
+import UserDashboardCreditUsage from "./pages/UserDashboardCreditUsage";
 import AwsCognitoSignupTestPage from "./pages/AwsCognitoSignupTestPage";
 import "./index.css";
 import {
@@ -16,6 +17,8 @@ import {
   resolveInitialLoginLanguage,
   type LoginLanguageCode,
 } from "./i18n/loginLanguages";
+import { clearCognitoIdentityCache } from "./services/awsCredentials";
+import { COGNITO } from "./config/cognito";
 
 function Redirector() {
   const navigate = useNavigate();
@@ -24,19 +27,25 @@ function Redirector() {
   React.useEffect(() => {
     if (!auth.isAuthenticated) return;
 
-    let redirectPath = "/user-dashboard/main";
+    const currentPath = window.location.pathname;
+    const currentTarget = `${currentPath}${window.location.search}${window.location.hash}`;
+
+    let redirectTarget = currentPath.startsWith("/user-dashboard/")
+      ? currentTarget
+      : "/user-dashboard/main";
+
     try {
       const stored = window.sessionStorage.getItem("redirect");
       if (stored) {
-        redirectPath = stored;
+        redirectTarget = stored;
         window.sessionStorage.removeItem("redirect");
       }
     } catch {
       // ignore storage errors
     }
 
-    if (window.location.pathname !== redirectPath) {
-      navigate(redirectPath, { replace: true });
+    if (currentTarget !== redirectTarget) {
+      navigate(redirectTarget, { replace: true });
     }
   }, [auth.isAuthenticated, navigate]);
 
@@ -59,7 +68,6 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
   const auth = useAuth();
   const location = useLocation();
   const [redirectInitiated, setRedirectInitiated] = React.useState(false);
-
   React.useEffect(() => {
     if (auth.isLoading || auth.isAuthenticated || redirectInitiated) return;
 
@@ -84,6 +92,32 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
 
     setRedirectInitiated(true);
   }, [auth, location, redirectInitiated]);
+
+  React.useEffect(() => {
+    if (!auth.isAuthenticated) {
+      if (COGNITO.region && COGNITO.identityPoolId) {
+        clearCognitoIdentityCache(COGNITO.region, COGNITO.identityPoolId);
+      }
+      exposeIdToken(oidc.client_id);
+      return;
+    }
+    const globalWindow = window as typeof window & { idToken?: string | null };
+    globalWindow.idToken = auth.user?.id_token ?? null;
+    exposeIdToken(oidc.client_id);
+  }, [auth.isAuthenticated, auth.user?.id_token]);
+
+  React.useEffect(() => {
+    if (!auth.isAuthenticated || !auth.user) return;
+    const email = auth.user.profile?.email ?? "(no email)";
+    const subject = auth.user.profile?.sub ?? auth.user.profile?.userId ?? "(no sub)";
+    console.log("[Auth] 로그인 완료", {
+      email,
+      subject,
+      idToken: auth.user.id_token,
+      issuedAt: auth.user.profile?.iat,
+      expiresAt: auth.user.profile?.exp,
+    });
+  }, [auth.isAuthenticated, auth.user]);
 
   if (!auth.isAuthenticated) {
     return (
@@ -112,6 +146,14 @@ function RouterApp() {
             </RequireAuth>
           )}
         />
+        <Route
+          path="/user-dashboard/credit/usage"
+          element={(
+            <RequireAuth>
+              <UserDashboardCreditUsage />
+            </RequireAuth>
+          )}
+        />
         <Route path="/test/aws-cognito-signup" element={<AwsCognitoSignupTestPage />} />
       </Routes>
     </>
@@ -135,10 +177,20 @@ const oidc = {
   onSigninCallback: () => {
     const clean = redirectUri;
     window.history.replaceState({}, document.title, clean);
+    exposeIdToken(oidc.client_id);
   },
 };
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+  throw new Error("Root element with id 'root' not found");
+}
+
+type RootHost = typeof rootElement & { __reactRoot?: ReturnType<typeof ReactDOM.createRoot> };
+const host = rootElement as RootHost;
+const existingRoot = host.__reactRoot;
+
+const renderApp = () => (
   <React.StrictMode>
     <AuthProvider {...oidc}>
       <BrowserRouter>
@@ -147,3 +199,71 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     </AuthProvider>
   </React.StrictMode>
 );
+
+if (existingRoot) {
+  existingRoot.render(renderApp());
+} else {
+  const root = ReactDOM.createRoot(rootElement);
+  host.__reactRoot = root;
+  root.render(renderApp());
+}
+
+function exposeIdToken(clientId: string) {
+  const prefix = `CognitoIdentityServiceProvider.${clientId}.`;
+  let token: string | null = null;
+
+  try {
+    const lastUser = window.localStorage.getItem(prefix + "LastAuthUser");
+    if (lastUser) {
+      token = window.localStorage.getItem(`${prefix}${lastUser}.idToken`);
+    }
+    if (!token) {
+      for (const key of Object.keys(window.localStorage)) {
+        if (key.startsWith(prefix) && key.endsWith(".idToken")) {
+          token = window.localStorage.getItem(key);
+          break;
+        }
+      }
+    }
+  } catch {
+    // ignore storage errors
+  }
+
+  if (!token) {
+    try {
+      for (const key of Object.keys(window.sessionStorage)) {
+        if (key.startsWith(prefix) && key.endsWith(".idToken")) {
+          token = window.sessionStorage.getItem(key);
+          break;
+        }
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  if (!token) {
+    try {
+      const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`${escapedPrefix}[^.]+\\.idToken=([^;]+)`);
+      const match = document.cookie.match(regex);
+      if (match) {
+        token = decodeURIComponent(match[1]);
+      }
+    } catch {
+      // ignore cookie errors
+    }
+  }
+
+  const globalWindow = window as typeof window & { idToken?: string | null };
+  if (token) {
+    globalWindow.idToken = token;
+    console.log("idToken len/splits:", token.length, token.split(".").length);
+  } else {
+    console.log(
+      "idToken len/splits:",
+      globalWindow.idToken?.length ?? 0,
+      globalWindow.idToken ? globalWindow.idToken.split(".").length : 0,
+    );
+  }
+}
